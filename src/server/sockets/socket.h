@@ -9,16 +9,16 @@ class Socket {
  public:
   virtual ~Socket();
 
-  virtual bool Create(int port) = 0;
-  virtual void Close() = 0;
+  virtual bool create(int port) = 0;
+  virtual void close() = 0;
   // virtual void Connect() = 0; // for future
-  virtual Socket* Accept() = 0;
-  virtual std::string Read(int size) = 0;
-  virtual void Send(const std::string& data) = 0;
+  virtual Socket* accept() = 0;
+  virtual std::string read(int size) = 0;
+  virtual void send(const std::string& data) = 0;
 
-  virtual int GetFd() const = 0;
-  virtual int GetPort() const = 0;
-  virtual std::string GetAddr() const = 0;
+  virtual int getFd() const = 0;
+  virtual int getPort() const = 0;
+  virtual std::string getAddr() const = 0;
 };
 
 } // namespace net

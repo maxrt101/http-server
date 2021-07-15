@@ -38,22 +38,22 @@ class HttpServer {
   HttpServer(config::HttpServerCofig conf);
   ~HttpServer();
 
-  void Init();
-  void Init(config::HttpServerCofig conf);
-  void Run();
-  void Stop();
+  void init();
+  void init(config::HttpServerCofig conf);
+  void run();
+  void stop();
 
-  void AddEndpoint(Endpoint endpoint);
-
- private:
-  static void DealWithClientJob(void* args);
-  void DealWithClient(net::Socket* client);
+  void addEndpoint(Endpoint endpoint);
 
  private:
-  net::BsdSocket socket_;
-  mrt::threads::ThreadPool pool_;
-  config::HttpServerCofig conf_;
-  std::unordered_map<std::string, std::unordered_map<int, Endpoint>> endpoints_;
+  static void dealWithClientJob(void* args);
+  void dealWithClient(net::Socket* client);
+
+ private:
+  net::BsdSocket m_socket;
+  mrt::threads::ThreadPool m_pool;
+  config::HttpServerCofig m_conf;
+  std::unordered_map<std::string, std::unordered_map<int, Endpoint>> m_endpoints;
 };
 } // namespace server
 

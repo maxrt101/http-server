@@ -29,7 +29,7 @@ struct RequestHeader {
   std::string http_version;
 
  public:
-  std::string GetString() const;
+  std::string getString() const;
 };
 
 struct Request {
@@ -39,7 +39,7 @@ struct Request {
   std::string body;
 
  public:
-  std::string GetString() const;
+  std::string getString() const;
 };
 
 } // namespace http

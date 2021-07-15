@@ -82,7 +82,7 @@ struct ResponseHeader {
   std::string http_version = "1.1";
   int status = 200;
 
-  std::string GetString() const;
+  std::string getString() const;
 };
 
 struct Response {
@@ -95,16 +95,16 @@ struct Response {
   Response();
   Response(int status);
 
-  Response& SetStatus(int status);
-  Response& AddHeader(const std::string& key, const std::string& value);
-  Response& KeepAlive(int max, int timeout);
-  Response& SetContent(const std::string& type, const std::string& content);
-  Response& SetContentFromFile(const std::string& file_path);
-  Response& GenerateContent();
+  Response& setStatus(int status);
+  Response& addHeader(const std::string& key, const std::string& value);
+  Response& keepAlive(int max, int timeout);
+  Response& setContent(const std::string& type, const std::string& content);
+  Response& setContentFromFile(const std::string& file_path);
+  Response& generateContent();
 
-  std::string GetString() const;
-  void Send(net::Socket* socket);
-  void SendWithoutHandlerInvocation(net::Socket* socket) const;
+  std::string getString() const;
+  void send(net::Socket* socket);
+  void sendWithoutHandlerInvocation(net::Socket* socket) const;
 };
 
 } // namespace http

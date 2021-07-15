@@ -17,21 +17,21 @@ class BsdSocket : public Socket {
 
   BsdSocket& operator=(const BsdSocket& rhs);
 
-  bool Create(int port) override;
-  void Close() override;
-  Socket* Accept() override;
-  std::string Read(int size) override;
-  void Send(const std::string& data) override;
+  bool create(int port) override;
+  void close() override;
+  Socket* accept() override;
+  std::string read(int size) override;
+  void send(const std::string& data) override;
 
-  int GetFd() const override;
-  int GetPort() const override;
-  std::string GetAddr() const override;
+  int getFd() const override;
+  int getPort() const override;
+  std::string getAddr() const override;
 
  private:
-  int fd_ = 0;
-  sa_family_t family_;
-  sockaddr_in address4_;
-  sockaddr_in6 address6_;
+  int m_fd = 0;
+  sa_family_t m_family;
+  sockaddr_in m_address4;
+  sockaddr_in6 m_address6;
 };
 
 } // namespace net

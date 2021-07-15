@@ -12,30 +12,30 @@
 static constexpr int kIPv6AddressBufferSize = INET6_ADDRSTRLEN+1;
 
 
-net::BsdSocket::BsdSocket(sa_family_t family) : family_(family) {}
+net::BsdSocket::BsdSocket(sa_family_t family) : m_family(family) {}
 
 net::BsdSocket::~BsdSocket() {}
 
 
 net::BsdSocket& net::BsdSocket::operator=(const BsdSocket& rhs) {
-  fd_ = rhs.fd_;
-  address4_ = rhs.address4_;
-  address6_ = rhs.address6_;
+  m_fd = rhs.m_fd;
+  m_address4 = rhs.m_address4;
+  m_address6 = rhs.m_address6;
   return *this;
 }
 
 
-bool net::BsdSocket::Create(int port) {
-  fd_ = socket(family_, SOCK_STREAM, 0);
+bool net::BsdSocket::create(int port) {
+  m_fd = socket(m_family, SOCK_STREAM, 0);
 
-  if (fd_ < 0) {
-    log::Error("Could not create socket: %s", strerror(errno));
-    if (family_ == AF_INET6 && errno == EAFNOSUPPORT) {
-      log::Info("Trying to create IPv4 socket instead");
-      family_ = AF_INET;
-      fd_ = socket(family_, SOCK_STREAM, 0);
-      if (fd_ < 0) {
-        log::Error("Could not create socket: %s", strerror(errno));
+  if (m_fd < 0) {
+    log::error("Could not create socket: %s", strerror(errno));
+    if (m_family == AF_INET6 && errno == EAFNOSUPPORT) {
+      log::info("Trying to create IPv4 socket instead");
+      m_family = AF_INET;
+      m_fd = socket(m_family, SOCK_STREAM, 0);
+      if (m_fd < 0) {
+        log::error("Could not create socket: %s", strerror(errno));
         return false;
       }
     } else {
@@ -43,31 +43,31 @@ bool net::BsdSocket::Create(int port) {
     }
   }
 
-  if (family_ == AF_INET) {
-    address4_.sin_family = family_;
-    address4_.sin_port = htons(port);
-    address4_.sin_addr.s_addr = htonl(INADDR_ANY);
-    if (bind(fd_, (sockaddr*)&address4_, sizeof(sockaddr_in) < 0)) {
-      log::Error("bind() failed: %s", strerror(errno));
+  if (m_family == AF_INET) {
+    m_address4.sin_family = m_family;
+    m_address4.sin_port = htons(port);
+    m_address4.sin_addr.s_addr = htonl(INADDR_ANY);
+    if (::bind(m_fd, (sockaddr*)&m_address4, sizeof(sockaddr_in) < 0)) {
+      log::error("bind() failed: %s", strerror(errno));
       return false;
     }
-    log::Info("Socket is IPv4");
-  } else if (family_ == AF_INET6) {
-    address6_.sin6_family = family_;
-    address6_.sin6_port = htons(port);
-    address6_.sin6_addr = in6addr_any;
-    if (bind(fd_, (sockaddr*)&address6_, sizeof(sockaddr_in6)) < 0) {
-      log::Error("bind() failed: %s",  strerror(errno));
+    log::info("Socket is IPv4");
+  } else if (m_family == AF_INET6) {
+    m_address6.sin6_family = m_family;
+    m_address6.sin6_port = htons(port);
+    m_address6.sin6_addr = in6addr_any;
+    if (::bind(m_fd, (sockaddr*)&m_address6, sizeof(sockaddr_in6)) < 0) {
+      log::error("bind() failed: %s",  strerror(errno));
       return false;
     }
-    log::Info("Socket is IPv6");
+    log::info("Socket is IPv6");
   } else {
-    log::Info("Invalid addresss family");
+    log::info("Invalid addresss family");
     return false;
   }
 
-  if (listen(fd_, SOMAXCONN) < 0) {
-    log::Error("listen() failed: %s", strerror(errno));
+  if (listen(m_fd, SOMAXCONN) < 0) {
+    log::error("listen() failed: %s", strerror(errno));
     return false;
   }
   
@@ -75,22 +75,22 @@ bool net::BsdSocket::Create(int port) {
 }
 
 
-void net::BsdSocket::Close() {
-  close(fd_);
+void net::BsdSocket::close() {
+  ::close(m_fd);
 }
 
 
-net::Socket* net::BsdSocket::Accept() {
-  BsdSocket* client = new BsdSocket(family_);
+net::Socket* net::BsdSocket::accept() {
+  BsdSocket* client = new BsdSocket(m_family);
 
-  if (family_ == AF_INET) {
+  if (m_family == AF_INET) {
     socklen_t addrlen = sizeof(sockaddr_in);
-    client->fd_ = accept(fd_, (sockaddr*)&client->address4_, &addrlen);
-  } else if (family_ == AF_INET6) {
+    client->m_fd = ::accept(m_fd, (sockaddr*)&client->m_address4, &addrlen);
+  } else if (m_family == AF_INET6) {
     socklen_t addrlen = sizeof(sockaddr_in6);
-    client->fd_ = accept(fd_, (sockaddr*)&client->address6_, &addrlen);
+    client->m_fd = ::accept(m_fd, (sockaddr*)&client->m_address6, &addrlen);
   } else {
-    log::Error("Invalid address family");
+    log::error("Invalid address family");
     delete client;
     return nullptr;
   }
@@ -99,49 +99,49 @@ net::Socket* net::BsdSocket::Accept() {
 }
 
 
-std::string net::BsdSocket::Read(int size) {
+std::string net::BsdSocket::read(int size) {
   char* buffer = new char[size];
   std::string data;
-  int read_len = read(fd_, buffer, size);
+  int read_len = ::read(m_fd, buffer, size);
   data = buffer;
   delete [] buffer;
   return data;
 }
 
 
-void net::BsdSocket::Send(const std::string& data) {
-  write(fd_, data.c_str(), data.size());
+void net::BsdSocket::send(const std::string& data) {
+  write(m_fd, data.c_str(), data.size());
 }
 
 
-int net::BsdSocket::GetFd() const {
-  return fd_;
+int net::BsdSocket::getFd() const {
+  return m_fd;
 }
 
 
-int net::BsdSocket::GetPort() const {
-  if (family_ == AF_INET) {
-    return ntohs(address4_.sin_port);
-  } else if (family_ == AF_INET6) {
-    return ntohs(address6_.sin6_port);
+int net::BsdSocket::getPort() const {
+  if (m_family == AF_INET) {
+    return ntohs(m_address4.sin_port);
+  } else if (m_family == AF_INET6) {
+    return ntohs(m_address6.sin6_port);
   }
   return 0;
 }
 
 
-std::string net::BsdSocket::GetAddr() const {
+std::string net::BsdSocket::getAddr() const {
   char addrstrbuf[kIPv6AddressBufferSize] {0};
   const char* ntop_ret = 0;
-  if (family_ == AF_INET) {
-    ntop_ret = inet_ntop(family_, &address4_.sin_addr, addrstrbuf, kIPv6AddressBufferSize);
-  } else if (family_ == AF_INET6) {
-    ntop_ret = inet_ntop(family_, &address6_.sin6_addr, addrstrbuf, kIPv6AddressBufferSize);
+  if (m_family == AF_INET) {
+    ntop_ret = inet_ntop(m_family, &m_address4.sin_addr, addrstrbuf, kIPv6AddressBufferSize);
+  } else if (m_family == AF_INET6) {
+    ntop_ret = inet_ntop(m_family, &m_address6.sin6_addr, addrstrbuf, kIPv6AddressBufferSize);
   }
 
   if (ntop_ret == addrstrbuf) {
     return std::string(addrstrbuf);
   } else {
-    log::Error("inet_notp() failed: %s", strerror(errno));
+    log::error("inet_notp() failed: %s", strerror(errno));
   }
   return "";
 }

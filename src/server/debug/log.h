@@ -5,14 +5,14 @@
 
 namespace log {
 
-void StartLog(const std::string& file_name);
-void EndLog();
-bool IsLogActive();
+void startLog(const std::string& file_name);
+void endLog();
+bool isLogActive();
 
-void Error(const char* fmt, ...);
-void Warning(const char* fmt, ...);
-void Info(const char* fmt, ...);
-void Debug(const char* fmt, ...);
+void error(const char* fmt, ...);
+void warning(const char* fmt, ...);
+void info(const char* fmt, ...);
+void debug(const char* fmt, ...);
 
 } // namespace log
 

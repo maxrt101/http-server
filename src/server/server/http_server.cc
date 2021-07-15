@@ -19,81 +19,80 @@
 #include "server/debug/log.h"
 #include "server/utils/die.h"
 
-// std::mutex data_access_mutex;
-// std::mutex socket_access_mutex;
 std::atomic<bool> terminate_flag = false;
+
 
 net::HttpServer::HttpServer() {}
 
-net::HttpServer::HttpServer(config::HttpServerCofig conf) : conf_(conf) {}
+net::HttpServer::HttpServer(config::HttpServerCofig conf) : m_conf(conf) {}
 
 net::HttpServer::~HttpServer() {}
 
-void net::HttpServer::Init() {
-  if (!socket_.Create(conf_.port)) {
+void net::HttpServer::init() {
+  if (!m_socket.create(m_conf.port)) {
     utils::Die();
   }
 }
 
-void net::HttpServer::Init(config::HttpServerCofig conf) {
-  conf_ = conf;
-  Init();
+void net::HttpServer::init(config::HttpServerCofig conf) {
+  m_conf = conf;
+  init();
 }
 
-void net::HttpServer::Run() {
-  log::Info("Listening for incoming connections");
+void net::HttpServer::run() {
+  log::info("Listening for incoming connections");
 
   while (1) {
-    net::Socket* client = socket_.Accept();
+    net::Socket* client = m_socket.accept();
     JobParams* params = new JobParams{this, client};
-    pool_.AddJob(mrt::threads::Job(&HttpServer::DealWithClientJob, params));
+    m_pool.addJob(mrt::threads::Job(&HttpServer::dealWithClientJob, params));
   }
 }
 
-void net::HttpServer::Stop() {
+void net::HttpServer::stop() {
   terminate_flag.store(true);
-  pool_.WaitForAll();
+  m_pool.waitForAll();
 }
 
-void net::HttpServer::AddEndpoint(Endpoint endpoint) {
-  endpoints_[endpoint.url][(int)endpoint.method] = endpoint;
+void net::HttpServer::addEndpoint(Endpoint endpoint) {
+  m_endpoints[endpoint.url][(int)endpoint.method] = endpoint;
 }
 
-void net::HttpServer::DealWithClientJob(void* arg) {
+void net::HttpServer::dealWithClientJob(void* arg) {
   JobParams* params = static_cast<JobParams*>(arg);
-  params->server->DealWithClient(params->client);
+  params->server->dealWithClient(params->client);
   delete params;
 }
 
-void net::HttpServer::DealWithClient(net::Socket* client) {
-  if (client->GetFd() < 0) {
-    log::Error("accept() failed: %s", strerror(errno));
+void net::HttpServer::dealWithClient(net::Socket* client) {
+  if (client->getFd() < 0) {
+    log::error("accept() failed: %s", strerror(errno));
     delete client;
     return;
   }
 
-  log::Info("Accepted connection from [%s]:%d", client->GetAddr().c_str(), client->GetPort());
+  log::info("Accepted connection from [%s]:%d", client->getAddr().c_str(), client->getPort());
 
   bool keep_alive = false;
   int keep_alive_transaction_count = 0;
 
   do {
     http::RequestParser parser;
-    auto result = parser.Parse(client);
+    auto result = parser.parse(client);
 
     if (!result) {
       if (result.error == http::RequestParser::Error::kInterrupted) {
-        log::Warning("Request parsing was interrupted ([%s]:%d)", client->GetAddr().c_str(), client->GetPort());
+        log::warning("Request parsing was interrupted ([%s]:%d)", client->getAddr().c_str(), client->getPort());
       } else if (result.error == http::RequestParser::Error::kNoData) {
-        log::Warning("Request from [%s]:%d is not complete", client->GetAddr().c_str(), client->GetPort());
+        log::warning("Request from [%s]:%d is not complete", client->getAddr().c_str(), client->getPort());
       } else if (result.error == http::RequestParser::Error::kRequestTimeout) {
-        log::Warning("Request from [%s]:%d timed out", client->GetAddr().c_str(), client->GetPort());
-        http::Response(http::REQUEST_TIMEOUT).GenerateContent().Send(client);
+        log::warning("Request from [%s]:%d timed out", client->getAddr().c_str(), client->getPort());
+        http::Response(http::REQUEST_TIMEOUT).generateContent().send(client);
       } else if (result.error == http::RequestParser::Error::kBadRequest) {
-        log::Warning("Request parsing failed - invalid request ([%s]:%d)", client->GetAddr().c_str(), client->GetPort());
-        http::Response(http::BAD_REQUEST).GenerateContent().Send(client);
+        log::warning("Request parsing failed - invalid request ([%s]:%d)", client->getAddr().c_str(), client->getPort());
+        http::Response(http::BAD_REQUEST).generateContent().send(client);
       } else {
-        log::Warning("Error parsing (%d)", result.error);
+        log::warning("Error parsing (%d)", result.error);
       }
       break;
     }
@@ -104,81 +103,86 @@ void net::HttpServer::DealWithClient(net::Socket* client) {
       }
     }
 
+#ifdef _DEBUG
     std::cout << "REQUEST: {\n" << result.request.GetString() << "}" << std::endl;
+#endif
 
-    auto itr = endpoints_.find(result.request.header.url);
-    if (itr != endpoints_.end()) {
+    auto itr = m_endpoints.find(result.request.header.url);
+    if (itr != m_endpoints.end()) {
       Endpoint endpoint;
-      auto& endpoints_url = endpoints_[result.request.header.url];
+      auto& endpoints_url = m_endpoints[result.request.header.url];
       if (endpoints_url.find((int)result.request.header.method) != endpoints_url.end()) {
         endpoint = endpoints_url[(int)result.request.header.method];
       } else if (endpoints_url.find((int)http::Method::NONE) != endpoints_url.end()) {
         endpoint = endpoints_url[(int)http::Method::NONE];
       } else {
-        http::Response(http::METHOD_NOT_ALLOWED).GenerateContent().Send(client);
+        http::Response(http::METHOD_NOT_ALLOWED).generateContent().send(client);
       }
 
-      log::Debug("Endpoint: {%s, %s, %i}", endpoint.url.c_str(), http::GetMethodName(endpoint.method).c_str(), endpoint.function != nullptr);
+      log::debug("Endpoint: {%s, %s, %i}", endpoint.url.c_str(), http::GetMethodName(endpoint.method).c_str(), endpoint.function != nullptr);
 
-      if (endpoint.function != nullptr) { 
+      if (endpoint.function != nullptr) {
         http::Response response = endpoint.function(result.request);
+        log::debug("Keep-Alive: $d", keep_alive);
         if (keep_alive) {
-          response.KeepAlive(conf_.keep_alive_max, conf_.keep_alive_timeout);
+          response.keepAlive(m_conf.keep_alive_max, m_conf.keep_alive_timeout);
         }
-        response.Send(client);
+        response.send(client);
       } else {
-        http::Response(http::NOT_FOUND).GenerateContent().Send(client);
+        http::Response(http::NOT_FOUND).generateContent().send(client);
       }
     } else {
-      if (!conf_.root_folder.empty()) {
+      if (!m_conf.root_folder.empty()) {
         if (result.request.header.method == http::Method::GET) {
           std::string url = result.request.header.url;
           if (url == "/") {
-            url += conf_.default_doc;
+            url += m_conf.default_doc;
           }
           http::Response response;
-          response.SetContentFromFile(url);
+          response.setContentFromFile(url);
           if (keep_alive) {
-            response.KeepAlive(conf_.keep_alive_max, conf_.keep_alive_timeout);
+            response.keepAlive(m_conf.keep_alive_max, m_conf.keep_alive_timeout);
           }
-          response.Send(client);
+          response.send(client);
         }
       } else {
-        http::Response(http::NOT_FOUND).GenerateContent().Send(client);
+        http::Response(http::NOT_FOUND).generateContent().send(client);
       }
     }
 
     /* Keep-Alive */
     keep_alive_transaction_count++;
 
-    if (!keep_alive || keep_alive_transaction_count >= conf_.keep_alive_max) {
+    if (!keep_alive || keep_alive_transaction_count >= m_conf.keep_alive_max) {
       break;
     }
 
-    for (int i = 0; i < conf_.keep_alive_timeout; i++) {
+    // for (int i = 0; i < conf_.keep_alive_timeout; i++) {
       pollfd fds;
-      fds.fd = client->GetFd();
+      fds.fd = client->getFd();
       fds.events = POLLIN;
 
-      int poll_ret = poll(&fds, 1, 1000);
+      int poll_ret = poll(&fds, 1, m_conf.keep_alive_timeout * 1000);
       if (terminate_flag.load()) {
         keep_alive = false;
         break;
       }
 
       if (poll_ret == -1) {
-        log::Warning("poll() failed during keep-alive wait, connection to [%s]:%d closing: %s",
-          client->GetAddr().c_str(), client->GetPort(), strerror(errno));
+        log::warning("poll() failed during keep-alive wait, connection to [%s]:%d closing: %s",
+          client->getAddr().c_str(), client->getPort(), strerror(errno));
         keep_alive = false;
         break;
+      } else if (poll_ret == 0) {
+        log::debug("Keep-Alive Timeout");
       } else if (fds.revents & POLLIN) {
-        log::Debug("Another request from [%s]:%d", client->GetAddr().c_str(), client->GetPort());
+        log::debug("Another request from [%s]:%d", client->getAddr().c_str(), client->getPort());
         break;
       }
-    }
+    // }
 
   } while (keep_alive);
 
-  client->Close();
+  client->close();
   delete client;
 }

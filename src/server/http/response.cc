@@ -160,7 +160,7 @@ std::string http::GetReponseMessage(int code) {
   }
 }
 
-std::string http::ResponseHeader::GetString() const {
+std::string http::ResponseHeader::getString() const {
   std::stringstream ss;
   ss << "HTTP/" << http_version << " " << status << " " << GetReponseMessage(status);
   return ss.str();
@@ -175,53 +175,53 @@ http::Response::Response(int status) : Response() {
   this->header.status = status;
 }
 
-http::Response& http::Response::SetStatus(int status) {
+http::Response& http::Response::setStatus(int status) {
   header.status = status;
   return *this;
 }
 
-http::Response& http::Response::AddHeader(const std::string& key, const std::string& value) {
+http::Response& http::Response::addHeader(const std::string& key, const std::string& value) {
   headers[key] = value;
   return *this;
 }
 
-http::Response& http::Response::KeepAlive(int max, int timeout) {
+http::Response& http::Response::keepAlive(int max, int timeout) {
   headers["Connection"] = "keep-alive";
   headers["Keep-Alive"] = "max=" + std::to_string(max) + ", timeout=" + std::to_string(timeout);
   return *this;
 }
 
-http::Response& http::Response::SetContent(const std::string& type, const std::string& content) {
+http::Response& http::Response::setContent(const std::string& type, const std::string& content) {
   headers["Content-Type"] = type;
   headers["Conent-Length"] = std::to_string(content.size());
   body = content;
   return *this;
 }
 
-http::Response& http::Response::SetContentFromFile(const std::string& file_path) {
+http::Response& http::Response::setContentFromFile(const std::string& file_path) {
   if (IsPathValid(file_path)) {
     std::ifstream content_file(file_path);
     if (!content_file.is_open()) {
-      SetStatus(NOT_FOUND).GenerateContent();
+      setStatus(NOT_FOUND).generateContent();
     } else {
       std::string content((std::istreambuf_iterator<char>(content_file)),
                            std::istreambuf_iterator<char>());
-      SetContent(GetMimeTypeByFileName(file_path), content);
+      setContent(GetMimeTypeByFileName(file_path), content);
     }
   } else {
-    SetStatus(NOT_FOUND).GenerateContent();
+    setStatus(NOT_FOUND).generateContent();
   }
   return *this;
 }
 
-http::Response& http::Response::GenerateContent() {
-  SetContent("text/plain", std::to_string(header.status) + " " + GetReponseMessage(header.status));
+http::Response& http::Response::generateContent() {
+  setContent("text/plain", std::to_string(header.status) + " " + GetReponseMessage(header.status));
   return *this;
 }
 
-std::string http::Response::GetString() const {
+std::string http::Response::getString() const {
   std::stringstream ss;
-  ss << header.GetString() << kCRLF;
+  ss << header.getString() << kCRLF;
   for (auto& header_field : headers) {
     ss << header_field.first << ": " << header_field.second << kCRLF;
   }
@@ -229,16 +229,18 @@ std::string http::Response::GetString() const {
   return ss.str();
 }
 
-void http::Response::SendWithoutHandlerInvocation(net::Socket* socket) const {
-  std::string response_str = GetString();
+void http::Response::sendWithoutHandlerInvocation(net::Socket* socket) const {
+  std::string response_str = getString();
+#ifdef _DEBUG
   std::cout << "RESPONSE {\n" << response_str << "}" << std::endl;
-  log::Info("Sending %d to [%s]:%d", header.status, socket->GetAddr().c_str(), socket->GetPort());
-  socket->Send(response_str);
+#endif
+  log::info("Sending %d to [%s]:%d", header.status, socket->getAddr().c_str(), socket->getPort());
+  socket->send(response_str);
 }
 
-void http::Response::Send(net::Socket* socket) {
+void http::Response::send(net::Socket* socket) {
   if (GetHandler(header.status) != nullptr) {
     *this = GetHandler(header.status)(*this);
   }
-  SendWithoutHandlerInvocation(socket);
+  sendWithoutHandlerInvocation(socket);
 }

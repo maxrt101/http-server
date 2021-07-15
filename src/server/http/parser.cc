@@ -39,186 +39,186 @@ http::RequestParser::Result::operator bool() const {
   return error == Error::kNoError;
 }
 
-http::RequestParser::Result http::RequestParser::Parse(net::Socket* socket) {
-  ClearState();
+http::RequestParser::Result http::RequestParser::parse(net::Socket* socket) {
+  clearState();
 
   do {
     for (int i = 0; i < kTimeout; i++) {
       pollfd fds;
-      fds.fd = socket->GetFd();
+      fds.fd = socket->getFd();
       fds.events = POLLIN;
 
       int poll_ret = poll(&fds, 1, 1000);
       if (terminate_flag.load()) {
-        result_.error = Error::kInterrupted;
+        m_result.error = Error::kInterrupted;
         break;
       }
 
       if (poll_ret == -1) {
-        log::Error("poll() failed: %s", strerror(errno));
+        log::error("poll() failed: %s", strerror(errno));
         utils::Die();
       } else if (fds.revents & POLLIN) {
-        std::string data = socket->Read(kBufferSize);
+        std::string data = socket->read(kBufferSize);
 
         if (data.size() == 0) {
-          result_.error = Error::kNoData;
+          m_result.error = Error::kNoData;
           break;
         }
 
-        raw_request_ += data;
+        m_raw_request += data;
 
-        HandleNewData(data);
+        handleNewData(data);
         break;
       }
     }
-  } while (state_ != State::kEnd);
+  } while (m_state != State::kEnd);
 
-  return result_;
+  return m_result;
 }
 
-http::RequestParser::Result http::RequestParser::Parse(const std::string& request) {
-  ClearState();
+http::RequestParser::Result http::RequestParser::parse(const std::string& request) {
+  clearState();
 
-  raw_request_ = request;
-  HandleNewData(request);
+  m_raw_request = request;
+  handleNewData(request);
 
-  return result_;
+  return m_result;
 }
 
-void http::RequestParser::HandleNewData(std::string data) {
+void http::RequestParser::handleNewData(std::string data) {
   for (int i = 0; i < data.size(); i++) {
-    if (state_ == State::kEnd) {
+    if (m_state == State::kEnd) {
       return;
-    } else if (state_ == State::kContent) {
-      result_.request.body += data.substr(i);
-      if (result_.request.body.size() >= expected_content_size_) {
-        state_ = State::kEnd;
+    } else if (m_state == State::kContent) {
+      m_result.request.body += data.substr(i);
+      if (m_result.request.body.size() >= m_expected_content_size) {
+        m_state = State::kEnd;
       }
       return;
     } else {
       if (data[i] == '\r') {
-        switch (state_) {
-          case State::kHeader:        state_ = State::kHeaderCR; break;
-          case State::kHeaderField:   state_ = State::kHeaderFieldCR; break;
+        switch (m_state) {
+          case State::kHeader:        m_state = State::kHeaderCR; break;
+          case State::kHeaderField:   m_state = State::kHeaderFieldCR; break;
           case State::kHeaderFieldCRLF:
-          case State::kHeaderCRLF:    state_ = State::kCR; break;
+          case State::kHeaderCRLF:    m_state = State::kCR; break;
           default:
-            log::Warning("RequestParser is in an invalid state (char: '\\r', pos: %d, state: %d)", i, state_);
-            result_.error = Error::kBadRequest;
+            log::warning("RequestParser is in an invalid state (char: '\\r', pos: %d, state: %d)", i, m_state);
+            m_result.error = Error::kBadRequest;
         }
       } else if (data[i] == '\n') {
-        switch (state_) {
-          case State::kHeaderCR:      state_ = State::kHeaderCRLF; break;
-          case State::kHeaderFieldCR: state_ = State::kHeaderFieldCRLF; break;
-          case State::kCR:            state_ = State::kCRLF; break;
+        switch (m_state) {
+          case State::kHeaderCR:      m_state = State::kHeaderCRLF; break;
+          case State::kHeaderFieldCR: m_state = State::kHeaderFieldCRLF; break;
+          case State::kCR:            m_state = State::kCRLF; break;
           default:
-            log::Warning("RequestParser is in an invalid state (char: '\\n', pos: %d, state: %d)", i, state_);
-            result_.error = Error::kBadRequest;
+            log::warning("RequestParser is in an invalid state (char: '\\n', pos: %d, state: %d)", i, m_state);
+            m_result.error = Error::kBadRequest;
         }
-        ParseCurrentLine();
+        parseCurrentLine();
       } else {
-        if (state_ == State::kHeaderCRLF || state_ == State::kHeaderFieldCRLF) {
-          state_ = State::kHeaderField;
+        if (m_state == State::kHeaderCRLF || m_state == State::kHeaderFieldCRLF) {
+          m_state = State::kHeaderField;
         }
-        current_line_.push_back(data[i]);
+        m_current_line.push_back(data[i]);
       }
     }
   }
 }
 
-void http::RequestParser::ParseCurrentLine() {
-  if (HadError()) {
+void http::RequestParser::parseCurrentLine() {
+  if (hadError()) {
     return;
   }
 
   /* Check for request content */
-  if (state_ == State::kCRLF) {
-    if (HasContent()) {
-      state_ = State::kContent;
+  if (m_state == State::kCRLF) {
+    if (hasContent()) {
+      m_state = State::kContent;
       try {
-        expected_content_size_ = std::stoi(result_.request.headers.at("Content-Length"));
+        m_expected_content_size = std::stoi(m_result.request.headers.at("Content-Length"));
       } catch (std::invalid_argument e) {
-        state_ = State::kEnd;
-        result_.error = Error::kBadRequest;
-        log::Error("Content-Length is not a number");
+        m_state = State::kEnd;
+        m_result.error = Error::kBadRequest;
+        log::error("Content-Length is not a number");
         return;
       }
     } else {
-      state_ = State::kEnd;
+      m_state = State::kEnd;
     }
     return;
   }
 
   /* Parse Header */
-  if (state_ == State::kHeaderCRLF) {
+  if (m_state == State::kHeaderCRLF) {
     std::vector<std::string> tokens;
     int prev_token_idx = -1;
-    for (int i = 0; i < current_line_.size(); i++) { // <
-      if (current_line_[i] == ' ') {
-        tokens.push_back(std::string(&current_line_[prev_token_idx+1], i-prev_token_idx-1));
+    for (int i = 0; i < m_current_line.size(); i++) { // <
+      if (m_current_line[i] == ' ') {
+        tokens.push_back(std::string(&m_current_line[prev_token_idx+1], i-prev_token_idx-1));
         prev_token_idx = i;
       }
     }
-    tokens.push_back(std::string(&current_line_[prev_token_idx+1], current_line_.size()-prev_token_idx-1));
+    tokens.push_back(std::string(&m_current_line[prev_token_idx+1], m_current_line.size()-prev_token_idx-1));
   
     if (tokens.size() <= 3 && tokens.size() > 2) {
-      result_.request.header.method = StringToHttpMethod(tokens[0]);
+      m_result.request.header.method = StringToHttpMethod(tokens[0]);
       if (tokens.size() == 3) {
         if (tokens[1].find("?") != std::string::npos) {
           int key_idx = tokens[1].find("?")+1;
           int eq_idx = key_idx;
-          result_.request.header.url = tokens[1].substr(0, key_idx-1);
+          m_result.request.header.url = tokens[1].substr(0, key_idx-1);
           for (int i = key_idx; i < tokens[1].size(); i++) {
             if (tokens[1][i] == '=') {
               eq_idx = i;
             }
             if (tokens[1][i] == '&') {
-              result_.request.header.params[tokens[1].substr(key_idx, eq_idx-key_idx)] = tokens[1].substr(eq_idx+1, i-eq_idx-1);
+              m_result.request.header.params[tokens[1].substr(key_idx, eq_idx-key_idx)] = tokens[1].substr(eq_idx+1, i-eq_idx-1);
               key_idx = i+1;
               eq_idx = key_idx;
             }
           }
-          result_.request.header.params[tokens[1].substr(key_idx, eq_idx-key_idx)] = tokens[1].substr(eq_idx+1);
+          m_result.request.header.params[tokens[1].substr(key_idx, eq_idx-key_idx)] = tokens[1].substr(eq_idx+1);
         } else {
-          result_.request.header.url = tokens[1];
+          m_result.request.header.url = tokens[1];
         }
 
-        result_.request.header.http_version = tokens[2].substr(5);
+        m_result.request.header.http_version = tokens[2].substr(5);
       } else {
-        result_.request.header.url = "/";
-        result_.request.header.http_version = tokens[1].substr(5);
+        m_result.request.header.url = "/";
+        m_result.request.header.http_version = tokens[1].substr(5);
       }
     } else {
-      result_.error = Error::kBadRequest;
-      log::Warning("Invalid header: '%s'", current_line_.c_str());
-      current_line_ = "";
+      m_result.error = Error::kBadRequest;
+      log::warning("Invalid header: '%s'", m_current_line.c_str());
+      m_current_line = "";
       return;
     }
-  } else if (state_ == State::kHeaderFieldCRLF) {
-    std::string key = current_line_.substr(0, current_line_.find(":"));
-    result_.request.headers[key] = current_line_.substr(current_line_.find(":")+2);
+  } else if (m_state == State::kHeaderFieldCRLF) {
+    std::string key = m_current_line.substr(0, m_current_line.find(":"));
+    m_result.request.headers[key] = m_current_line.substr(m_current_line.find(":")+2);
   } else {
-    log::Warning("RequestParser is in an invalid state (line: '%s', state: %d)", current_line_.c_str(), state_);
-    result_.error = Error::kBadRequest;
+    log::warning("RequestParser is in an invalid state (line: '%s', state: %d)", m_current_line.c_str(), m_state);
+    m_result.error = Error::kBadRequest;
   }
 
-  current_line_ = "";
+  m_current_line = "";
 }
 
-void http::RequestParser::ClearState() {
-  result_.error = Error::kNoError;
-  result_.request = Request();
-  raw_request_ = "";
-  state_ = State::kHeader;
+void http::RequestParser::clearState() {
+  m_result.error = Error::kNoError;
+  m_result.request = Request();
+  m_raw_request = "";
+  m_state = State::kHeader;
 }
 
-bool http::RequestParser::HadError() const {
-  return result_.error != Error::kNoError;
+bool http::RequestParser::hadError() const {
+  return m_result.error != Error::kNoError;
 }
 
-bool http::RequestParser::HasContent() const {
-  bool has_content_length_header = result_.request.headers.find("Content-Length") != result_.request.headers.end();
-  if (has_content_length_header && std::stoi(result_.request.headers.at("Content-Length")) > 0) {
+bool http::RequestParser::hasContent() const {
+  bool has_content_length_header = m_result.request.headers.find("Content-Length") != m_result.request.headers.end();
+  if (has_content_length_header && std::stoi(m_result.request.headers.at("Content-Length")) > 0) {
     return true;
   }
   return false;

@@ -20,7 +20,7 @@ std::string http::GetMethodName(http::Method method) {
   }
 }
 
-std::string http::RequestHeader::GetString() const {
+std::string http::RequestHeader::getString() const {
   std::stringstream ss;
   ss << GetMethodName(method) << " " << url;
   if (!params.empty()) {
@@ -38,9 +38,9 @@ std::string http::RequestHeader::GetString() const {
   return ss.str();
 }
 
-std::string http::Request::GetString() const {
+std::string http::Request::getString() const {
   std::stringstream ss;
-  ss << header.GetString() << kCRLF;
+  ss << header.getString() << kCRLF;
   for (auto& header_field : headers) {
     ss << header_field.first << ": " << header_field.second << kCRLF;
   }

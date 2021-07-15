@@ -40,22 +40,22 @@ class RequestParser {
   };
 
  public:
-  Result Parse(net::Socket* socket);
-  Result Parse(const std::string& request);
+  Result parse(net::Socket* socket);
+  Result parse(const std::string& request);
 
  private:
-  void ClearState();
-  bool HadError() const;
-  bool HasContent() const;
-  void HandleNewData(std::string data);
-  void ParseCurrentLine();
+  void clearState();
+  bool hadError() const;
+  bool hasContent() const;
+  void handleNewData(std::string data);
+  void parseCurrentLine();
 
  private:
-  Result result_;
-  State state_;
-  int expected_content_size_ = 0;
-  std::string raw_request_;
-  std::string current_line_;
+  Result m_result;
+  State m_state;
+  int m_expected_content_size = 0;
+  std::string m_raw_request;
+  std::string m_current_line;
 };
 
 } // namepsace http

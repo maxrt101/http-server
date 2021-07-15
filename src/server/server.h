@@ -1,8 +1,8 @@
 #ifndef SERVER_SERVER_H_
 #define SERVER_SERVER_H_
 
-#include "server/server/http_server.h"
-#include "server/config/server_config.h"
+#include "server/http_server.h"
+#include "config/server_config.h"
 
 namespace mrt {
 
@@ -11,12 +11,12 @@ class Server {
   Server();
   Server(config::HttpServerCofig conf);
 
-  Server& AddEndpoint(net::HttpServer::Endpoint endpoint);
+  Server& addEndpoint(net::HttpServer::Endpoint endpoint);
 
-  Server& Run();
+  Server& run();
 
  private:
-  net::HttpServer server_;
+  net::HttpServer m_server;
 };
 
 } // namespace mrt
