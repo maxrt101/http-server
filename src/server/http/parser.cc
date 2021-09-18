@@ -101,7 +101,8 @@ void http::RequestParser::handleNewData(std::string data) {
           case State::kHeader:        m_state = State::kHeaderCR; break;
           case State::kHeaderField:   m_state = State::kHeaderFieldCR; break;
           case State::kHeaderFieldCRLF:
-          case State::kHeaderCRLF:    m_state = State::kCR; break;
+          case State::kHeaderCRLF:
+          case State::kCRLF:    m_state = State::kCR; break;
           default:
             log::warning("RequestParser is in an invalid state (char: '\\r', pos: %d, state: %d)", i, m_state);
             m_result.error = Error::kBadRequest;
