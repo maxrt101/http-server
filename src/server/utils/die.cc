@@ -1,6 +1,6 @@
-#include "server/utils/die.h"
+#include "mrt/server/utils/die.h"
 
-#include "server/debug/log.h"
+#include "mrt/server/debug/log.h"
 
 void utils::Die(int exit_code) {
   if (log::isLogActive()) {

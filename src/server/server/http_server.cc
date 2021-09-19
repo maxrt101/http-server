@@ -1,4 +1,4 @@
-#include "server/server/http_server.h"
+#include "mrt/server/server/http_server.h"
 
 #include <cstring>
 #include <cstdlib>
@@ -11,13 +11,13 @@
 #include <sys/types.h>
 #include <poll.h>
 
-#include "server/sockets/bsd_socket.h"
-#include "server/sockets/socket.h"
-#include "server/http/response.h"
-#include "server/http/request.h"
-#include "server/http/parser.h"
-#include "server/debug/log.h"
-#include "server/utils/die.h"
+#include "mrt/server/sockets/bsd_socket.h"
+#include "mrt/server/sockets/socket.h"
+#include "mrt/server/http/response.h"
+#include "mrt/server/http/request.h"
+#include "mrt/server/http/parser.h"
+#include "mrt/server/debug/log.h"
+#include "mrt/server/utils/die.h"
 
 std::atomic<bool> terminate_flag = false;
 
@@ -44,8 +44,8 @@ void net::HttpServer::run() {
 
   while (1) {
     net::Socket* client = m_socket.accept();
-    JobParams* params = new JobParams{this, client};
-    m_pool.addJob(mrt::threads::Job(&HttpServer::dealWithClientJob, params));
+    TaskParams* params = new TaskParams{this, client};
+    m_pool.addTask({&HttpServer::dealWithClientTask, params});
   }
 }
 
@@ -58,8 +58,8 @@ void net::HttpServer::addEndpoint(Endpoint endpoint) {
   m_endpoints[endpoint.url][(int)endpoint.method] = endpoint;
 }
 
-void net::HttpServer::dealWithClientJob(void* arg) {
-  JobParams* params = static_cast<JobParams*>(arg);
+void net::HttpServer::dealWithClientTask(void* arg) {
+  TaskParams* params = static_cast<TaskParams*>(arg);
   params->server->dealWithClient(params->client);
   delete params;
 }

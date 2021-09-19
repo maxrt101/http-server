@@ -8,12 +8,13 @@
 #include <netinet/in.h>
 
 #include "mrt/threads/pool.h"
+#include "mrt/threads/task.h"
 
-#include "server/sockets/bsd_socket.h"
-#include "server/sockets/socket.h"
-#include "server/http/response.h"
-#include "server/http/request.h"
-#include "server/config/server_config.h"
+#include "mrt/server/sockets/bsd_socket.h"
+#include "mrt/server/sockets/socket.h"
+#include "mrt/server/http/response.h"
+#include "mrt/server/http/request.h"
+#include "mrt/server/config/server_config.h"
 
 namespace net {
 class HttpServer {
@@ -28,7 +29,7 @@ class HttpServer {
   };
 
  private:
-  struct JobParams {
+  struct TaskParams {
     HttpServer* server;
     net::Socket* client;
   };
@@ -46,12 +47,12 @@ class HttpServer {
   void addEndpoint(Endpoint endpoint);
 
  private:
-  static void dealWithClientJob(void* args);
+  static void dealWithClientTask(void* args);
   void dealWithClient(net::Socket* client);
 
  private:
   net::BsdSocket m_socket;
-  mrt::threads::ThreadPool m_pool;
+  mrt::threads::ThreadPool<mrt::threads::Task<TaskParams*>> m_pool;
   config::HttpServerCofig m_conf;
   std::unordered_map<std::string, std::unordered_map<int, Endpoint>> m_endpoints;
 };

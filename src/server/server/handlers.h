@@ -3,7 +3,7 @@
 
 #include <functional>
 
-#include "server/http/response.h"
+#include "mrt/server/http/response.h"
 
 namespace http {
 
@@ -12,6 +12,6 @@ using Handler = std::function<Response(const Response&)>;
 void SetHandler(int code, Handler handler = nullptr);
 Handler GetHandler(int code);
 
-} // namespace
+} // namespace http
 
 #endif

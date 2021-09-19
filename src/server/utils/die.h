@@ -1,7 +1,6 @@
 #ifndef SERVER_UTILS_DIE_H_
 #define SERVER_UTILS_DIE_H_
 
-
 #include <cstdlib>
 
 namespace utils {

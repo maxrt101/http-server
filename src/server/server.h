@@ -1,8 +1,8 @@
 #ifndef SERVER_SERVER_H_
 #define SERVER_SERVER_H_
 
-#include "server/http_server.h"
-#include "config/server_config.h"
+#include "mrt/server/server/http_server.h"
+#include "mrt/server/config/server_config.h"
 
 namespace mrt {
 

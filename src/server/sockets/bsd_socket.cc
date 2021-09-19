@@ -1,16 +1,14 @@
-#include "server/sockets/bsd_socket.h"
+#include "mrt/server/sockets/bsd_socket.h"
 
 #include <errno.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#include "server/sockets/socket.h"
-#include "server/debug/log.h"
-#include "server/utils/die.h"
-
+#include "mrt/server/sockets/socket.h"
+#include "mrt/server/debug/log.h"
+#include "mrt/server/utils/die.h"
 
 static constexpr int kIPv6AddressBufferSize = INET6_ADDRSTRLEN+1;
-
 
 net::BsdSocket::BsdSocket(sa_family_t family) : m_family(family) {}
 

@@ -1,4 +1,4 @@
-#include "server/http/response.h"
+#include "mrt/server/http/response.h"
 
 #include <unistd.h>
 #include <cstring>
@@ -6,9 +6,9 @@
 #include <sstream>
 #include <fstream>
 
-#include "server/server/handlers.h"
-#include "server/http/request.h"
-#include "server/debug/log.h"
+#include "mrt/server/server/handlers.h"
+#include "mrt/server/http/request.h"
+#include "mrt/server/debug/log.h"
 
 static constexpr char kCRLF[] = "\r\n";
 

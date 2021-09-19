@@ -1,30 +1,34 @@
 # HTTP Server
 
-export TOPDIR   := $(shell pwd)
-export BINDIR   := $(TOPDIR)/bin
+export TOPDIR     := $(shell pwd)
+export PREFIX     ?= $(TOPDIR)/build
 
-export CXX      := g++
-export CFLAGS   := -I$(TOPDIR)/src -I/usr/local/opt/openssl/include/
-export CXXFLAGS := $(CFLAGS) -std=c++17
-export LDFLAGS  := -lpthread -lhttpserver -lmrt
-# /usr/local/opt/openssl/lib/libssl.dylib /usr/local/opt/openssl/lib/libcrypto.dylib /usr/lib/libxml2.dylib
+export CXX        := g++
+export CFLAGS     := -I$(TOPDIR)/src -I/usr/local/opt/openssl/include/
+export CXXFLAGS   := $(CFLAGS) -std=c++17
+export LDFLAGS    := -L$(PREFIX)/lib -lpthread -lhttpserver -lmrt
 
-LIBDIRS         :=  -L$(BINDIR)
+.PHONY: build
 
-.PHONY: server
-
-server:
-	mkdir -p $(BINDIR)
+build: dependencies 
+	$(info Building HttpServer)
 	make -C src
 
-mrt:
-	mkdir -p $(BINDIR)
-	make -C src/mrt
-	cp src/mrt/bin/libmrt.a $(BINDIR)/
+dependencies: prepare
+	make -C src/mrt PREFIX=$(PREFIX)
 
-app: mrt
-	$(CXX) $(CXXFLAGS) $(LIBDIRS) $(LDFLAGS) src/main.cc -o bin/server
+prepare:
+	mkdir -p $(PREFIX)
+	mkdir -p $(PREFIX)/bin
+	mkdir -p $(PREFIX)/include
+	mkdir -p $(PREFIX)/lib
+
+app:
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) src/main.cc -o bin/server
 
 clean:
 	make -C src clean
 	make -C src/mrt clean
+
+$(V).SILENT:
+
