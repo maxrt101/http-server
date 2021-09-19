@@ -61,7 +61,7 @@ http::RequestParser::Result http::RequestParser::parse(net::Socket* socket) {
         std::string data = socket->read(kBufferSize);
 
         if (data.size() == 0) {
-          m_result.error = Error::kNoData;
+          m_state = State::kEnd;
           break;
         }
 
@@ -71,7 +71,7 @@ http::RequestParser::Result http::RequestParser::parse(net::Socket* socket) {
         break;
       }
     }
-  } while (m_state != State::kEnd);
+  } while (m_state != State::kEnd && !hadError());
 
   return m_result;
 }
@@ -98,11 +98,11 @@ void http::RequestParser::handleNewData(std::string data) {
     } else {
       if (data[i] == '\r') {
         switch (m_state) {
-          case State::kHeader:        m_state = State::kHeaderCR; break;
-          case State::kHeaderField:   m_state = State::kHeaderFieldCR; break;
-          case State::kHeaderFieldCRLF:
+          case State::kHeader:          m_state = State::kHeaderCR; break;
+          case State::kHeaderField:     m_state = State::kHeaderFieldCR; break;
+          case State::kHeaderFieldCRLF: m_state = State::kHeaderCR;
           case State::kHeaderCRLF:
-          case State::kCRLF:    m_state = State::kCR; break;
+          case State::kCRLF:            m_state = State::kCR; break;
           default:
             log::warning("RequestParser is in an invalid state (char: '\\r', pos: %d, state: %d)", i, m_state);
             m_result.error = Error::kBadRequest;

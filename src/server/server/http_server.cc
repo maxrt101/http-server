@@ -84,7 +84,7 @@ void net::HttpServer::dealWithClient(net::Socket* client) {
       if (result.error == http::RequestParser::Error::kInterrupted) {
         log::warning("Request parsing was interrupted ([%s]:%d)", client->getAddr().c_str(), client->getPort());
       } else if (result.error == http::RequestParser::Error::kNoData) {
-        log::warning("Request from [%s]:%d is not complete", client->getAddr().c_str(), client->getPort());
+        log::warning("Request from [%s]:%d may not complete", client->getAddr().c_str(), client->getPort());
       } else if (result.error == http::RequestParser::Error::kRequestTimeout) {
         log::warning("Request from [%s]:%d timed out", client->getAddr().c_str(), client->getPort());
         http::Response(http::REQUEST_TIMEOUT).generateContent().send(client);
@@ -96,6 +96,8 @@ void net::HttpServer::dealWithClient(net::Socket* client) {
       }
       break;
     }
+
+    log::info("%s %s", http::GetMethodName(result.request.header.method).c_str(), result.request.header.url.c_str());
 
     if (result.request.headers.find("Connection") != result.request.headers.end()) {
       if (result.request.headers["Connection"] == "keep-alive") {
