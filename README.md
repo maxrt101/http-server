@@ -14,7 +14,7 @@ After install `libhttpserver.a` and `libmrt.a` will be present inside `PREFIX/li
 To embed http-server into your project, you can just include it as a git submodule, and run `make -C http-server` inside your projects `Makefile`
 
 ### Example:
-``c++
+```c++
 
 mrt::Server server;
 
