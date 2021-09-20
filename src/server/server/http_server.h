@@ -36,11 +36,11 @@ class HttpServer {
 
  public:
   HttpServer();
-  HttpServer(config::HttpServerCofig conf);
+  HttpServer(config::HttpServerConfig conf);
   ~HttpServer();
 
   void init();
-  void init(config::HttpServerCofig conf);
+  void init(config::HttpServerConfig conf);
   void run();
   void stop();
 
@@ -53,7 +53,7 @@ class HttpServer {
  private:
   net::BsdSocket m_socket;
   mrt::threads::ThreadPool<mrt::threads::Task<TaskParams*>> m_pool;
-  config::HttpServerCofig m_conf;
+  config::HttpServerConfig m_conf;
   std::unordered_map<std::string, std::unordered_map<int, Endpoint>> m_endpoints;
 };
 } // namespace server

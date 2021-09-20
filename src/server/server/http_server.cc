@@ -24,7 +24,7 @@ std::atomic<bool> terminate_flag = false;
 
 net::HttpServer::HttpServer() {}
 
-net::HttpServer::HttpServer(config::HttpServerCofig conf) : m_conf(conf) {}
+net::HttpServer::HttpServer(config::HttpServerConfig conf) : m_conf(conf) {}
 
 net::HttpServer::~HttpServer() {}
 
@@ -34,7 +34,7 @@ void net::HttpServer::init() {
   }
 }
 
-void net::HttpServer::init(config::HttpServerCofig conf) {
+void net::HttpServer::init(config::HttpServerConfig conf) {
   m_conf = conf;
   init();
 }
