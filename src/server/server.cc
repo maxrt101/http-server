@@ -4,7 +4,7 @@ mrt::Server::Server() {
   m_server.init();
 }
 
-mrt::Server::Server(config::HttpServerCofig conf) {
+mrt::Server::Server(config::HttpServerConfig conf) {
   m_server.init(conf);
 }
 

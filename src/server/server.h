@@ -9,7 +9,7 @@ namespace mrt {
 class Server {
  public:
   Server();
-  Server(config::HttpServerCofig conf);
+  Server(config::HttpServerConfig conf);
 
   Server& addEndpoint(net::HttpServer::Endpoint endpoint);
 
