@@ -141,6 +141,8 @@ void net::HttpServer::dealWithClient(net::Socket* client) {
             url += m_conf.default_doc;
           }
           http::Response response;
+          url.insert(url.begin(), m_conf.root_folder.begin(), m_conf.root_folder.end());
+          log::debug("URL: %s", url.c_str());
           response.setContentFromFile(url);
           if (keep_alive) {
             response.keepAlive(m_conf.keep_alive_max, m_conf.keep_alive_timeout);
