@@ -1,10 +1,10 @@
 # HTTP Server
 
-NAME      	:= httpserver
-LIBNAME   	:= lib$(NAME).a
-INSTALLDIR 	:= $(PREFIX)/include/mrt/server
-CXXFLAGS  	+= -c -I$(PREFIX)/include
-OBJS      	:= server/server.o server/debug/log.o server/utils/die.o server/http/request.o server/http/response.o server/http/parser.o server/sockets/socket.o server/sockets/bsd_socket.o server/server/handlers.o server/server/http_server.o
+NAME        := httpserver
+LIBNAME     := lib$(NAME).a
+INSTALLDIR  := $(PREFIX)/include/mrt/server
+CFLAGS      += -c -I$(PREFIX)/include
+OBJS        := server/server.o server/debug/log.o server/utils/die.o server/http/request.o server/http/response.o server/http/parser.o server/sockets/socket.o server/sockets/bsd_socket.o server/server/handlers.o server/server/http_server.o
 
 .PHONY: all
 
@@ -17,7 +17,7 @@ build: install $(OBJS)
 
 $(OBJS): %.o : %.cc
 	$(info Building $@)
-	$(CXX) $(CXXFLAGS) $< -o $@
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $< -o $@
 
 install: prepare
 	$(info Installing Headers)

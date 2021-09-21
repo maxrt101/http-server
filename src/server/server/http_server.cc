@@ -106,7 +106,7 @@ void net::HttpServer::dealWithClient(net::Socket* client) {
     }
 
 #ifdef _DEBUG
-    std::cout << "REQUEST: {\n" << result.request.GetString() << "}" << std::endl;
+    std::cout << "REQUEST: {\n" << result.request.getString() << "}" << std::endl;
 #endif
 
     auto itr = m_endpoints.find(result.request.header.url);

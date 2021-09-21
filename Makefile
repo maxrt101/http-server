@@ -5,10 +5,14 @@ export PREFIX     ?= $(TOPDIR)/build
 
 export CXX        := g++
 export CFLAGS     := -I$(TOPDIR)/src -I/usr/local/opt/openssl/include/
-export CXXFLAGS   := $(CFLAGS) -std=c++17
+export CXXFLAGS   := -std=c++17
 export LDFLAGS    := -L$(PREFIX)/lib -lpthread -lhttpserver -lmrt
 
 .PHONY: build
+
+ifeq ("$(DEBUG)","1")
+CFLAGS += -D_DEBUG
+endif
 
 build: dependencies 
 	$(info Building HttpServer)
