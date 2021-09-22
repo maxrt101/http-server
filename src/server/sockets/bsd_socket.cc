@@ -45,7 +45,7 @@ bool net::BsdSocket::create(int port) {
     m_address4.sin_family = m_family;
     m_address4.sin_port = htons(port);
     m_address4.sin_addr.s_addr = htonl(INADDR_ANY);
-    if (::bind(m_fd, (sockaddr*)&m_address4, sizeof(sockaddr_in) < 0)) {
+    if (::bind(m_fd, (sockaddr*)&m_address4, sizeof(sockaddr_in)) < 0) {
       log::error("bind() failed: %s", strerror(errno));
       return false;
     }
@@ -139,7 +139,7 @@ std::string net::BsdSocket::getAddr() const {
   if (ntop_ret == addrstrbuf) {
     return std::string(addrstrbuf);
   } else {
-    log::error("inet_notp() failed: %s", strerror(errno));
+    log::error("inet_ntop() failed: %s", strerror(errno));
   }
   return "";
 }

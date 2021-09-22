@@ -19,7 +19,7 @@
 #include "mrt/server/debug/log.h"
 #include "mrt/server/utils/die.h"
 
-std::atomic<bool> terminate_flag = false;
+std::atomic<bool> g_terminate_flag = false;
 
 
 net::HttpServer::HttpServer() {}
@@ -44,13 +44,14 @@ void net::HttpServer::run() {
 
   while (1) {
     net::Socket* client = m_socket.accept();
+    log::debug("accept fd:: %d", client->getFd());
     TaskParams* params = new TaskParams{this, client};
     m_pool.addTask({&HttpServer::dealWithClientTask, params});
   }
 }
 
 void net::HttpServer::stop() {
-  terminate_flag.store(true);
+  g_terminate_flag.store(true);
   m_pool.waitForAll();
 }
 
@@ -72,6 +73,7 @@ void net::HttpServer::dealWithClient(net::Socket* client) {
   }
 
   log::info("Accepted connection from [%s]:%d", client->getAddr().c_str(), client->getPort());
+  log::debug("client fd: %d", client->getFd());
 
   bool keep_alive = false;
   int keep_alive_transaction_count = 0;
@@ -85,6 +87,7 @@ void net::HttpServer::dealWithClient(net::Socket* client) {
         log::warning("Request parsing was interrupted ([%s]:%d)", client->getAddr().c_str(), client->getPort());
       } else if (result.error == http::RequestParser::Error::kNoData) {
         log::warning("Request from [%s]:%d may not complete", client->getAddr().c_str(), client->getPort());
+        log::warning("Uncompleted:[%s]", result.request.getString().c_str());
       } else if (result.error == http::RequestParser::Error::kRequestTimeout) {
         log::warning("Request from [%s]:%d timed out", client->getAddr().c_str(), client->getPort());
         http::Response(http::REQUEST_TIMEOUT).generateContent().send(client);
@@ -105,9 +108,7 @@ void net::HttpServer::dealWithClient(net::Socket* client) {
       }
     }
 
-#ifdef _DEBUG
-    std::cout << "REQUEST: {\n" << result.request.getString() << "}" << std::endl;
-#endif
+    log::debug("Request: {%s}", result.request.getString().c_str());
 
     auto itr = m_endpoints.find(result.request.header.url);
     if (itr != m_endpoints.end()) {
@@ -125,7 +126,7 @@ void net::HttpServer::dealWithClient(net::Socket* client) {
 
       if (endpoint.function != nullptr) {
         http::Response response = endpoint.function(result.request);
-        log::debug("Keep-Alive: $d", keep_alive);
+        log::debug("Keep-Alive: %d", keep_alive);
         if (keep_alive) {
           response.keepAlive(m_conf.keep_alive_max, m_conf.keep_alive_timeout);
         }
@@ -161,13 +162,13 @@ void net::HttpServer::dealWithClient(net::Socket* client) {
       break;
     }
 
-    // for (int i = 0; i < conf_.keep_alive_timeout; i++) {
+    // for (int i = 0; i < m_conf.keep_alive_timeout; i++) {
       pollfd fds;
       fds.fd = client->getFd();
       fds.events = POLLIN;
 
       int poll_ret = poll(&fds, 1, m_conf.keep_alive_timeout * 1000);
-      if (terminate_flag.load()) {
+      if (g_terminate_flag.load()) {
         keep_alive = false;
         break;
       }
@@ -181,7 +182,7 @@ void net::HttpServer::dealWithClient(net::Socket* client) {
         log::debug("Keep-Alive Timeout");
       } else if (fds.revents & POLLIN) {
         log::debug("Another request from [%s]:%d", client->getAddr().c_str(), client->getPort());
-        break;
+        // break;
       }
     // }
 

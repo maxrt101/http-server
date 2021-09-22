@@ -11,7 +11,7 @@ export LDFLAGS    := -L$(PREFIX)/lib -lpthread -lhttpserver -lmrt
 .PHONY: build
 
 ifeq ("$(DEBUG)","1")
-CFLAGS += -D_DEBUG
+CFLAGS += -D_DEBUG -g
 endif
 
 build: dependencies 

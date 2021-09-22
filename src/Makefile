@@ -41,7 +41,7 @@ prepare:
 	mkdir -p $(PREFIX)/lib
 
 clean:
-	rm $(OBJS)
+	rm -rf $(OBJS)
 
 $(V).SILENT:
 

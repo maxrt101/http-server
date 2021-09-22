@@ -11,7 +11,7 @@ namespace net {
 
 class BsdSocket : public Socket {
  public:
-  BsdSocket(sa_family_t family = AF_INET6);
+  BsdSocket(sa_family_t family = AF_INET);
   ~BsdSocket();
 
   BsdSocket& operator=(const BsdSocket& rhs);

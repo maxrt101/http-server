@@ -4,6 +4,8 @@
 #include "mrt/server/sockets/socket.h"
 #include "mrt/server/http/request.h"
 
+#include <vector>
+
 namespace http {
 
 Method StringToHttpMethod(const std::string& str);
@@ -27,13 +29,12 @@ class RequestParser {
 
  private:
   enum class State {
-    kHeader,
-    kHeaderCR,
+    kHeaderMethod,
+    kHeaderUrl,
+    kHeaderHttpVersion,
     kHeaderCRLF,
     kHeaderField,
-    kHeaderFieldCR,
     kHeaderFieldCRLF,
-    kCR,
     kCRLF,
     kContent,
     kEnd,
@@ -43,19 +44,25 @@ class RequestParser {
   Result parse(net::Socket* socket);
   Result parse(const std::string& request);
 
+  void parseUrl(const std::string url);
+
  private:
   void clearState();
   bool hadError() const;
   bool hasContent() const;
   void handleNewData(std::string data);
-  void parseCurrentLine();
 
  private:
   Result m_result;
   State m_state;
+
   int m_expected_content_size = 0;
   std::string m_raw_request;
-  std::string m_current_line;
+
+  std::string m_method;
+  std::string m_param_key;
+  std::string m_param_value;
+  bool m_param_is_key = true;
 };
 
 } // namepsace http
