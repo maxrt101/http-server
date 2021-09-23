@@ -176,16 +176,12 @@ void http::RequestParser::parseUrl(const std::string url) {
   if (url.find("?") != std::string::npos) {
     int key_idx = url.find("?")+1;
     int eq_idx = key_idx;
-    std::cout << "key_idx: " << key_idx << " size:" << url.size() << std::endl;
     m_result.request.header.url = url.substr(0, key_idx-1);
     for (int i = key_idx; i < url.size(); i++) {
-      std::cout << "i: " << i << std::endl;
       if (url[i] == '=') {
-        std::cout << "= " << i << std::endl;
         eq_idx = i;
       }
       if (url[i] == '&') {
-        std::cout << "& " << i << std::endl;
         m_result.request.header.params[url.substr(key_idx, eq_idx-key_idx)] = url.substr(eq_idx+1, i-eq_idx-1);
         key_idx = i+1;
         eq_idx = key_idx;
