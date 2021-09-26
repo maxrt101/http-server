@@ -11,6 +11,10 @@ class Server {
   Server();
   Server(config::HttpServerConfig conf);
 
+  Server& port(int port);
+  Server& root(const std::string& root);
+  Server& defaultDocument(const std::string& doc);
+
   Server& addEndpoint(net::HttpServer::Endpoint endpoint);
 
   Server& run();

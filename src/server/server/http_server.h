@@ -41,6 +41,7 @@ class HttpServer {
 
   void init();
   void init(config::HttpServerConfig conf);
+  config::HttpServerConfig& getConfig();
   void run();
   void stop();
 

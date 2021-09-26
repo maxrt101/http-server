@@ -5,15 +5,32 @@
 #include <iostream>
 
 int main(int argc, const char ** argv) {
-  log::startLog("server.log");
+  auto args = mrt::args::Parser("Lab3 Server", {
+    {"version", 'F', {"-v", "--version"}, "Shows version"},
+    {"port", 'V', {"-p", "--port"}, "Server Port (default '80')"},
+    {"root", 'V', {"-r", "--root"}, "Root Folder"},
+    {"log", 'V', {"-l", "--log"}, "Log file (default 'server.log')"},
+    {"api", 'V', {"-a", "--api"}, "Rest API Example path (default '/api')"}
+  }).parse(argc, argv);
+
+
+  int port = 80;
+  try {
+    port = std::stoi(args.getFirstOr("port", "80"));
+  } catch (std::exception& e) {
+    std::cout << "Error: invalid port" << std::endl;
+    return 1;
+  }
+  
+  log::startLog(args.getFirstOr("log", "server.log"));
 
   mrt::Server server;
 
-  server.addEndpoint({"/api", http::Method::GET, [](auto request) {
+  server.addEndpoint({args.getFirstOr("api", "/api"), http::Method::GET, [](auto request) {
     return http::Response(http::OK).setContent("text/plain", "Hello, HTTP Server!");
   }});
 
-  server.addEndpoint({"/api", http::Method::POST, [](auto request) {
+  server.addEndpoint({args.getFirstOr("api", "/api"), http::Method::POST, [](auto request) {
     std::string body;
     for (auto& p : request.header.params) {
       body += p.first + " = " + p.second + "\n";
@@ -21,7 +38,7 @@ int main(int argc, const char ** argv) {
     return http::Response(http::OK).setContent("text/plain", body);
   }});
 
-  server.run();
+  server.port(port).root(args.getFirstOr("root", ".")).run();
 
   return 0;
 }

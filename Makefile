@@ -4,7 +4,7 @@ export TOPDIR     := $(shell pwd)
 export PREFIX     ?= $(TOPDIR)/build
 
 export CXX        := g++
-export CFLAGS     := -I$(TOPDIR)/src -I/usr/local/opt/openssl/include/
+export CFLAGS     := -I$(TOPDIR)/src -I$(PREFIX)/include
 export CXXFLAGS   := -std=c++17
 export LDFLAGS    := -L$(PREFIX)/lib -lpthread -lhttpserver -lmrt
 
@@ -28,7 +28,8 @@ prepare:
 	mkdir -p $(PREFIX)/lib
 
 app:
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) src/main.cc -o bin/server
+	mkdir -p $(PREFIX)/bin
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(LDFLAGS) src/main.cc -o $(PREFIX)/bin/server
 
 clean:
 	make -C src clean

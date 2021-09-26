@@ -39,6 +39,10 @@ void net::HttpServer::init(config::HttpServerConfig conf) {
   init();
 }
 
+config::HttpServerConfig& net::HttpServer::getConfig() {
+  return m_conf;
+}
+
 void net::HttpServer::run() {
   log::info("Listening for incoming connections");
 
