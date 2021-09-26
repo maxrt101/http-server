@@ -3,6 +3,15 @@
 
 #include "mrt/server/server/http_server.h"
 #include "mrt/server/config/server_config.h"
+#include "mrt/server/version.h"
+
+#include <string>
+
+#define MRT_HTTP_VERSION_STRING "1.1"
+#define MRT_HTTP_VERSION 11
+#define MRT_HTTP_VERSION_MAJOR 1
+#define MRT_HTTP_VERSION_MINOR 1
+#define MTR_HTTP_VERSION_PATCH 0
 
 namespace mrt {
 

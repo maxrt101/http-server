@@ -9,6 +9,7 @@
 #include "mrt/server/server/handlers.h"
 #include "mrt/server/http/request.h"
 #include "mrt/server/debug/log.h"
+#include "mrt/server/version.h"
 
 static constexpr char kCRLF[] = "\r\n";
 
@@ -167,7 +168,8 @@ std::string http::ResponseHeader::getString() const {
 }
 
 http::Response::Response() {
-  headers["Server"] = "mrthttp/1.0";
+  headers["Server"] = "mrthttp/";
+  headers["Server"] += MRT_HTTP_VERSION_STRING;
   headers["Connection"] = "close";
 }
 

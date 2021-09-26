@@ -7,6 +7,7 @@ Dependencies: `git`, `gcc`/`clang`, `make`, binutils(`ar`)
 
  - Clone repo
  - `cd http-server`
+ - `git submodule update --init --recursive`
  - `make PREFIX=/path/to/install/dir`, set `PREFIX` to desired install location. If no prefix is specified, `build` folder will be created
 
 After install `libhttpserver.a` and `libmrt.a` will be present inside `PREFIX/lib` along with all required headers (in `PREFIX/include`)

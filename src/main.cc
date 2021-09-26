@@ -13,6 +13,10 @@ int main(int argc, const char ** argv) {
     {"api", 'V', {"-a", "--api"}, "Rest API Example path (default '/api')"}
   }).parse(argc, argv);
 
+  if (args.exists("version")) {
+    std::cout << "mrthttp v" << MRT_HTTP_VERSION_STRING << " by maxrt101" << std::endl;
+    return 0;
+  }
 
   int port = 80;
   try {
