@@ -5,7 +5,7 @@
 #include <iostream>
 
 int main(int argc, const char ** argv) {
-  auto args = mrt::args::Parser("Lab3 Server", {
+  auto args = mrt::args::Parser("Mrt Http Server", {
     {"version", 'F', {"-v", "--version"}, "Shows version"},
     {"port", 'V', {"-p", "--port"}, "Server Port (default '80')"},
     {"root", 'V', {"-r", "--root"}, "Root Folder"},
