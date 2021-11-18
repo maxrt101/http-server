@@ -54,11 +54,13 @@ http::RequestParser::Result http::RequestParser::parse(net::Socket* socket) {
       break;
     }
 
+    log::debug("poll: %d", poll_ret);
+
     if (poll_ret == -1) {
       log::error("poll() failed: %s", strerror(errno));
       utils::Die();
     } else if (poll_ret == 0) {
-      // timeout
+      m_result.error = Error::kRequestTimeout;
     } else if (fds.revents & POLLIN) {
       std::string data = socket->read(kBufferSize);
 
@@ -178,18 +180,24 @@ void http::RequestParser::parseUrl(const std::string url) {
   if (url.find("?") != std::string::npos) {
     int key_idx = url.find("?")+1;
     int eq_idx = key_idx;
+    int end_len = url.size();
     m_result.request.header.url = url.substr(0, key_idx-1);
     for (int i = key_idx; i < url.size(); i++) {
       if (url[i] == '=') {
         eq_idx = i;
       }
       if (url[i] == '&') {
+        if (i+1 >= url.size()) {
+          end_len = url.size()-eq_idx-2;
+          break;
+        }
         m_result.request.header.params[url.substr(key_idx, eq_idx-key_idx)] = url.substr(eq_idx+1, i-eq_idx-1);
         key_idx = i+1;
         eq_idx = key_idx;
+        end_len = url.size()-eq_idx;
       }
     }
-    m_result.request.header.params[url.substr(key_idx, eq_idx-key_idx)] = url.substr(eq_idx+1);
+    m_result.request.header.params[url.substr(key_idx, eq_idx-key_idx)] = url.substr(eq_idx+1, end_len);
   } else {
     m_result.request.header.url = url;
   }
