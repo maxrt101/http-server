@@ -57,6 +57,8 @@ http::RequestParser::Result http::RequestParser::parse(net::Socket* socket) {
     if (poll_ret == -1) {
       log::error("poll() failed: %s", strerror(errno));
       utils::Die();
+    } else if (poll_ret == 0) {
+      // timeout
     } else if (fds.revents & POLLIN) {
       std::string data = socket->read(kBufferSize);
 
